@@ -76,7 +76,21 @@ class Juego:
         for fila in tablero_visual:
             texto_fila = ' '.join(fila)
             print(texto_fila)
-                
-        
-        
-        
+
+if __name__ == "__main__":
+    #crea un tablero de 10*10
+    mi_juego = Juego(10,10)
+    
+    #poner muros manuales
+    mi_juego.colocar_muro(5,5)
+    mi_juego.colocar_muro(5,6)
+    mi_juego.colocar_muro(5,7)
+    
+    #crear los peones 
+    tom = Gato(0,0)
+    jerry = Raton(9,9)
+    
+    mi_juego.agregar_peon(tom)
+    mi_juego.agregar_peon(jerry)
+    
+    mi_juego.renderizar()
