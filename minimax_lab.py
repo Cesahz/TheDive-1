@@ -42,7 +42,7 @@ class Raton(Peon):
         for d in opciones:
             nueva_x = self.x + d[0]
             nueva_y = self.y + d[1]
-            if mi_juego.es_movimiento_valido(nueva_x,nueva_y):
+            if juego.es_movimiento_valido(nueva_x,nueva_y):
                 self.cambiar_posicion(nueva_x,nueva_y)
                 print('El raton se ha movido')
                 return
