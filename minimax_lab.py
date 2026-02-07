@@ -35,6 +35,18 @@ class Raton(Peon):
         super().__init__(x, y, SIMBOLO_RATON)
 
 
+    def mover_aleatoriamente(self,juego):
+        #definir las posibles opciones de movimiento con tuplas
+        opciones = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+        random.shuffle(opciones)
+        for d in opciones:
+            nueva_x = self.x + d[0]
+            nueva_y = self.y + d[1]
+            if mi_juego.es_movimiento_valido(nueva_x,nueva_y):
+                self.cambiar_posicion(nueva_x,nueva_y)
+                print('El raton se ha movido')
+                return
+
 #aca defino la clase mas importante, que seria la del juego o sistema
 class Juego:
     #este es como el dios, sabe todo lo que pasa en las ejecuciones, turnos, que hay en el tablero etc
@@ -144,5 +156,6 @@ if __name__ == "__main__":
             print(f'Tom se movio a {siguiente_x}, {siguiente_y}')
         else:
             print('Golpe, no se puede pasar por ahi')
+        jerry.mover_aleatoriamente(mi_juego)
         #renderizar el movimiento
         mi_juego.renderizar()
