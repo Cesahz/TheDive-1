@@ -6,11 +6,11 @@ import sys
 
 #configuracion de variables y configuraciones globales
 
-SIMBOLO_VACIO = '.'
-SIMBOLO_MURO = '#'
-SIMBOLO_GATO = 'G'
-SIMBOLO_RATON = 'R'
-SIMBOLO_QUESO = 'Q'
+SIMBOLO_VACIO = '⬜' 
+SIMBOLO_MURO = '🧱'
+SIMBOLO_GATO = '🐱'
+SIMBOLO_RATON = '🐭'
+SIMBOLO_QUESO = '🧀'
 
 #definir las clases
 #una clase para cualquier cosa que viva en el tablero, peon me parecio adecuado
@@ -33,6 +33,7 @@ class Raton(Peon):
     #sera la presa, su objetivo es comer queso y tambien maximizar distancia
     def __init__(self, x, y):
         super().__init__(x, y, SIMBOLO_RATON)
+
 
 #aca defino la clase mas importante, que seria la del juego o sistema
 class Juego:
@@ -62,7 +63,7 @@ class Juego:
         #este dibuja el estado de la consola en el presente de su ejecucion
         comando = "cls" if os.name == "nt" else 'clear'
         os.system(comando)
-        print('---- EL LABERINTO ----')
+        print('----Laberinto----')
         #una copia de seguridad
         #nota : deepcopy crea una clon independiente que no toca al original
         tablero_visual = copy.deepcopy(self.tablero)
@@ -100,45 +101,48 @@ class Juego:
 
 
 
-
-
-
+# esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
+# lo dejo asi y tambien aprendo a trabajar con modulo
 if __name__ == "__main__":
-    # Crear juego y muro
+    #crear juego
     mi_juego = Juego(10, 10)
-    mi_juego.colocar_muro(1, 0) # Ponemos un muro a la derecha de Tom (en x=1, y=0)
     
-    # Crear peones
+    #crear los peones del tablero
     tom = Gato(0, 0)
     jerry = Raton(9, 9)
-    
+    #agregar al tablero
     mi_juego.agregar_peon(tom)
     mi_juego.agregar_peon(jerry)
+    #renderizar antes del bucle para ver donde tamos
+    mi_juego.renderizar()
     
     print("--- INICIO ---")
-    mi_juego.renderizar()
-    
+    while True:
     # --- PRUEBA MANUAL DE MOVIMIENTO ---
-    input("Presiona Enter para intentar mover al Gato...")
+        direccion = input("Presiona (WASD) para mover al gato: ").lower()
+        siguiente_x = tom.x
+        siguiente_y = tom.y
 
-    # Intento 1: Mover a la derecha (x=1, y=0) -> ¡HAY UN MURO!
-    siguiente_x = 1
-    siguiente_y = 0
-    
-    if mi_juego.es_movimiento_valido(siguiente_x, siguiente_y):
-        print("Moviendo gato a la derecha...")
-        tom.cambiar_posicion(siguiente_x, siguiente_y)
-    else:
-        print("¡GOLPE! El gato chocó con un muro en (1, 0)")
+        if direccion == 'w':
+            siguiente_y -= 1
 
-    # Intento 2: Mover hacia abajo (x=0, y=1) -> ESTÁ LIBRE
-    siguiente_x = 0
-    siguiente_y = 1
+        elif direccion == "s":
+            siguiente_y += 1
+
+        elif direccion == "a":
+            siguiente_x -= 1
+
+        elif direccion == "d":
+            siguiente_x += 1
     
-    if mi_juego.es_movimiento_valido(siguiente_x, siguiente_y):
-        print("Moviendo gato hacia abajo...")
-        tom.cambiar_posicion(siguiente_x, siguiente_y)
-    else:
-        print("¡GOLPE! El gato no pudo bajar")
+        else:
+            print("Tecla no válida. Usa W, A, S, D. (minusculas)")
+            continue
         
-    mi_juego.renderizar()
+        if mi_juego.es_movimiento_valido(siguiente_x,siguiente_y):
+            tom.cambiar_posicion(siguiente_x,siguiente_y)
+            print(f'Tom se movio a {siguiente_x}, {siguiente_y}')
+        else:
+            print('Golpe, no se puede pasar por ahi')
+        #renderizar el movimiento
+        mi_juego.renderizar()
