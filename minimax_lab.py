@@ -50,9 +50,11 @@ class Raton(Peon):
 #aca defino la clase mas importante, que seria la del juego o sistema
 class Juego:
     #este es como el dios, sabe todo lo que pasa en las ejecuciones, turnos, que hay en el tablero etc
-    def __init__(self,ancho,alto):
+    def __init__(self,ancho,alto,turno_actual,max_turnos):
         self.ancho = ancho
         self.alto = alto
+        self.turno = turno_actual
+        self.max_turnos = max_turnos
         self.tablero = []
         #lista para saber que criaturas esta en el tablero
         self.peones = []
@@ -111,13 +113,18 @@ class Juego:
         #si pasa todas la pruebas me devuelve true
         return True
 
-
+#funcion para medir distancia
+def calcular_distancia(x1, y1, x2, y2):
+    diferencia_x = abs(x1 - x2)
+    diferencia_y = abs(y1 - y2)
+    distancia_pasos = diferencia_x + diferencia_y
+    return distancia_pasos
 
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulo
 if __name__ == "__main__":
     #crear juego
-    mi_juego = Juego(10, 10)
+    mi_juego = Juego(10, 10, 0 , 50)
     
     #crear los peones del tablero
     tom = Gato(0, 0)
@@ -157,5 +164,11 @@ if __name__ == "__main__":
         else:
             print('Golpe, no se puede pasar por ahi')
         jerry.mover_aleatoriamente(mi_juego)
-        #renderizar el movimiento
+        #renderizar el movimiento y sumar turno
         mi_juego.renderizar()
+        mi_juego.turno += 1
+        print(f'Turno {mi_juego.turno}/{mi_juego.max_turnos}')
+        #definir la condicion de victoria del raton
+        if mi_juego.turno >= mi_juego.max_turnos:
+            print('El Raton sobrevivio. . .\n El gato PIERDE. . .')
+            break
