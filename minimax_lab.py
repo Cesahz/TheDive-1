@@ -120,10 +120,25 @@ def calcular_distancia(x1, y1, x2, y2):
     distancia_pasos = diferencia_x + diferencia_y
     return distancia_pasos
 
+#funciona para evaluar el tablero
+def evaluar_tablero(juego):
+    posicion_gato = [juego.peones[0].x, juego.peones[0].y]
+    posicion_raton = [juego.peones[1].x, juego.peones[1].y]
+    
+    if posicion_gato == posicion_raton:
+        return 1000
+    elif juego.turno >= juego.max_turnos:
+        return -1000
+    else:
+        distancia = calcular_distancia(posicion_gato[0],posicion_gato[1],posicion_raton[0],posicion_raton[1])
+        return 100 - distancia
+
+
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulo
 if __name__ == "__main__":
-    #crear juego
+    
+    #crear juego y definir turno maximo (TEMPORAAAAAAAAAAAAAAAAL_)((**&())))
     mi_juego = Juego(10, 10, 0 , 50)
     
     #crear los peones del tablero
