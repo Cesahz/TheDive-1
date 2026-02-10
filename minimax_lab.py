@@ -2,7 +2,7 @@ import random
 import os
 import copy
 import sys
-
+import time
 
 #configuracion de variables y configuraciones globales
 
@@ -44,7 +44,6 @@ class Raton(Peon):
             nueva_y = self.y + d[1]
             if juego.es_movimiento_valido(nueva_x,nueva_y):
                 self.cambiar_posicion(nueva_x,nueva_y)
-                print('El raton se ha movido')
                 return
 
 #aca defino la clase mas importante, que seria la del juego o sistema
@@ -77,7 +76,7 @@ class Juego:
         #este dibuja el estado de la consola en el presente de su ejecucion
         comando = "cls" if os.name == "nt" else 'clear'
         os.system(comando)
-        print('----Laberinto----')
+        print('----Laberinto del gato y el raton----')
         #una copia de seguridad
         #nota : deepcopy crea una clon independiente que no toca al original
         tablero_visual = copy.deepcopy(self.tablero)
@@ -93,7 +92,7 @@ class Juego:
                 tablero_visual[py][px] = peon.simbolo
                 
         for fila in tablero_visual:
-            texto_fila = ' '.join(fila)
+            texto_fila = ''.join(fila)
             print(texto_fila)
     
     def es_movimiento_valido(self,x,y):
@@ -134,13 +133,121 @@ def evaluar_tablero(juego):
         return 100 - distancia
 
 
+#funcion auxiliar para tener los movimientos posibles
+def obtener_movimiento_valido(juego, peon):
+    movimientos = []
+    direcciones = [(0, -1), (0, 1), (-1, 0), (1, 0)]
+    for dx, dy in direcciones:
+        nx,ny = peon.x + dx, peon.y + dy
+        if juego.es_movimiento_valido(nx,ny):
+            movimientos.append((nx,ny))
+    return movimientos
+
+
+
+#el cerebro de las IAs, la funcion que piensa los movimientos
+def minimax(juego_copia, profundidad, es_turno_gato):
+    if profundidad == 0 or abs(evaluar_tablero(juego_copia)) == 1000:
+        return evaluar_tablero(juego_copia)
+    
+    #turno del gato (busca maximizar el puntaje)
+    if es_turno_gato:
+        max_eval = -float('inf') #el peor puntaje posible
+        
+        #obtener al gato de la copia 
+        gato_copia = juego_copia.peones[0]
+        posibles_movs = obtener_movimiento_valido(juego_copia,gato_copia)
+        
+        for mov in posibles_movs:
+            #1- clonar: creo un universo paralelo para no romper el actual
+            juego_futuro = copy.deepcopy(juego_copia)
+            
+            #2- simular que muevo al gato en ese futuro
+            juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
+            
+            #3- recursividad: que pasa despues? 
+            evaluacion = minimax(juego_futuro, profundidad - 1, False)
+            
+            #4- elegir la mejor opcion
+            max_eval = max(max_eval, evaluacion)
+        return max_eval
+    # turno del raton (minimizar puntaje)
+    else:
+        min_eval = float('inf') #el mejor puntaje posible
+        raton_copia = juego_copia.peones[1]
+        posibles_movs = obtener_movimiento_valido(juego_copia, raton_copia)
+        
+        for mov in posibles_movs:
+            #1- clonar
+            juego_futuro = copy.deepcopy(juego_copia)
+            
+            #2- simular
+            juego_futuro.peones[1].cambiar_posicion(mov[0], mov[1])
+            
+            #3- recursividad
+            evaluacion = minimax(juego_futuro, profundidad - 1, True)
+            
+            #4- elegir el menor valor
+            min_eval = min(min_eval, evaluacion)
+        return min_eval
+
+
+def mejor_movimiento_gato(juego):
+    mejor_puntaje = -float('inf')
+    mejor_movimiento = None # luego guardo aca (x,y)
+    
+    #1- tener el movimiento del gato real
+    gato = juego.peones[0]
+    movimientos = obtener_movimiento_valido(juego,gato)
+    for mov in movimientos:
+        #1-clonar
+        juego_futuro = copy.deepcopy(juego)
+        
+        #2-simular
+        juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
+        
+        #3- preguntar al cerebro
+        puntaje = minimax(juego_futuro,3,False) #el siguiente turno es del raton por eso false
+        
+        #4- si este puntaje es mejor que el record
+        if puntaje > mejor_puntaje:
+            mejor_puntaje = puntaje
+            mejor_movimiento = mov
+    return mejor_movimiento
+
+def mejor_movimiento_raton(juego):
+    mejor_puntaje = float('inf')
+    mejor_movimiento = None # luego guardo aca (x,y)
+    
+    #1- tener el movimiento del gato real
+    raton = juego.peones[1]
+    movimientos = obtener_movimiento_valido(juego,raton)
+    for mov in movimientos:
+        #1-clonar
+        juego_futuro = copy.deepcopy(juego)
+        
+        #2-simular
+        juego_futuro.peones[1].cambiar_posicion(mov[0],mov[1])
+        
+        #3- preguntar al cerebro
+        puntaje = minimax(juego_futuro,3,True) #el siguiente turno es del raton por eso false
+        
+        #4- si este puntaje es mejor que el record
+        if puntaje < mejor_puntaje:
+            mejor_puntaje = puntaje
+            mejor_movimiento = mov
+    return mejor_movimiento
+
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulo
 if __name__ == "__main__":
     
     #crear juego y definir turno maximo (TEMPORAAAAAAAAAAAAAAAAL_)((**&())))
+    # muros temporales para pruebas
     mi_juego = Juego(10, 10, 0 , 50)
-    
+    mi_juego.colocar_muro(5, 5)
+    mi_juego.colocar_muro(5, 6)
+    mi_juego.colocar_muro(5, 7)
     #crear los peones del tablero
     tom = Gato(0, 0)
     jerry = Raton(9, 9)
@@ -149,41 +256,38 @@ if __name__ == "__main__":
     mi_juego.agregar_peon(jerry)
     #renderizar antes del bucle para ver donde tamos
     mi_juego.renderizar()
-    
     print("--- INICIO ---")
+    time.sleep(1)
     while True:
-    # --- PRUEBA MANUAL DE MOVIMIENTO ---
-        direccion = input("Presiona (WASD) para mover al gato: ").lower()
-        siguiente_x = tom.x
-        siguiente_y = tom.y
-
-        if direccion == 'w':
-            siguiente_y -= 1
-
-        elif direccion == "s":
-            siguiente_y += 1
-
-        elif direccion == "a":
-            siguiente_x -= 1
-
-        elif direccion == "d":
-            siguiente_x += 1
-    
-        else:
-            print("Tecla no válida. Usa W, A, S, D. (minusculas)")
-            continue
+        print('El Gato Artificial esta pensando. . .')
+        nueva_pos = mejor_movimiento_gato(mi_juego)
         
-        if mi_juego.es_movimiento_valido(siguiente_x,siguiente_y):
-            tom.cambiar_posicion(siguiente_x,siguiente_y)
-            print(f'Tom se movio a {siguiente_x}, {siguiente_y}')
-        else:
-            print('Golpe, no se puede pasar por ahi')
+        if mi_juego.es_movimiento_valido(nueva_pos[0],nueva_pos[1]):
+            tom.cambiar_posicion(nueva_pos[0],nueva_pos[1])
+            
+        if tom.x == jerry.x and tom.y == jerry.y:
+            mi_juego.renderizar()
+            print("\n" + "="*30)
+            print("💀 ¡GAME OVER! El Gato ha cenado.")
+            print("="*30)
+            break
+
+        #mover aleatoriamente al raton
         jerry.mover_aleatoriamente(mi_juego)
+        
+        #avisar si jerry se suicida
+        if tom.x == jerry.x and tom.y == jerry.y:
+            mi_juego.renderizar()
+            print("\n💀 ¡El Ratón corrió hacia el Gato! Gana Tom.")
+            break
+    
         #renderizar el movimiento y sumar turno
-        mi_juego.renderizar()
         mi_juego.turno += 1
+        mi_juego.renderizar()
+        
         print(f'Turno {mi_juego.turno}/{mi_juego.max_turnos}')
         #definir la condicion de victoria del raton
         if mi_juego.turno >= mi_juego.max_turnos:
             print('El Raton sobrevivio. . .\n El gato PIERDE. . .')
             break
+        time.sleep(0.25)
