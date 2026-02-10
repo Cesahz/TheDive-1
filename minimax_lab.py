@@ -55,6 +55,7 @@ class Juego:
         self.turno = turno_actual
         self.max_turnos = max_turnos
         self.tablero = []
+        self.queso = None
         #lista para saber que criaturas esta en el tablero
         self.peones = []
         self.generar_tablero_vacio()
@@ -71,6 +72,12 @@ class Juego:
         #coloca un obstaculo (muro) en una coord especifica
         if 0 <= x < self.ancho and 0 <= y < self.alto:
             self.tablero[y][x] = SIMBOLO_MURO
+
+    def colocar_queso(self,x,y):
+        if 0 <= x < self.ancho and 0 <= y < self.alto:
+            self.tablero[y][x] = SIMBOLO_QUESO
+            self.queso = (x,y)
+
 
     def renderizar(self):
         #este dibuja el estado de la consola en el presente de su ejecucion
@@ -121,16 +128,30 @@ def calcular_distancia(x1, y1, x2, y2):
 
 #funciona para evaluar el tablero
 def evaluar_tablero(juego):
-    posicion_gato = [juego.peones[0].x, juego.peones[0].y]
-    posicion_raton = [juego.peones[1].x, juego.peones[1].y]
-    
-    if posicion_gato == posicion_raton:
+    gato = juego.peones[0]
+    raton = juego.peones[1]
+    #condicion de victoria para el gato :3
+    if gato.x == raton.x and gato.y == raton.y:
         return 1000
-    elif juego.turno >= juego.max_turnos:
+    
+    #condicion de victoria para el raton
+    if juego.queso and raton.x == juego.queso[0] and raton.y == juego.queso[1]:
         return -1000
+    
+    #victoria por tiempo del raton
+    if juego.turno >= juego.max_turnos:
+        return -1000
+    
+    #heuristica combinada
+    dist_gato = calcular_distancia(gato.x, gato.y, raton.x, raton.y)
+    
+    if juego.queso:
+        dist_queso = calcular_distancia(raton.x,raton.y, juego.queso[0],juego.queso[1])
     else:
-        distancia = calcular_distancia(posicion_gato[0],posicion_gato[1],posicion_raton[0],posicion_raton[1])
-        return 100 - distancia
+        dist_queso = 0
+    
+    #aplico una formula que calcula el posible valor conveniente para cada peon
+    return (100 - (dist_gato*3)) + dist_queso
 
 
 #funcion auxiliar para tener los movimientos posibles
@@ -146,7 +167,7 @@ def obtener_movimiento_valido(juego, peon):
 
 
 #el cerebro de las IAs, la funcion que piensa los movimientos
-def minimax(juego_copia, profundidad, es_turno_gato):
+def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
     if profundidad == 0 or abs(evaluar_tablero(juego_copia)) == 1000:
         return evaluar_tablero(juego_copia)
     
@@ -166,10 +187,14 @@ def minimax(juego_copia, profundidad, es_turno_gato):
             juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
             
             #3- recursividad: que pasa despues? 
-            evaluacion = minimax(juego_futuro, profundidad - 1, False)
+            evaluacion = minimax(juego_futuro, profundidad - 1, False,alpha,beta)
             
             #4- elegir la mejor opcion
             max_eval = max(max_eval, evaluacion)
+            
+            #PODA (corte)
+            if beta <= alpha:
+                break
         return max_eval
     # turno del raton (minimizar puntaje)
     else:
@@ -185,10 +210,15 @@ def minimax(juego_copia, profundidad, es_turno_gato):
             juego_futuro.peones[1].cambiar_posicion(mov[0], mov[1])
             
             #3- recursividad
-            evaluacion = minimax(juego_futuro, profundidad - 1, True)
+            evaluacion = minimax(juego_futuro, profundidad - 1, True, alpha, beta)
             
             #4- elegir el menor valor
             min_eval = min(min_eval, evaluacion)
+            
+            #PODA (corte)
+            if beta <= alpha:
+                break #cortar porque el gato no deja que llegue a ese estado tan bueno
+
         return min_eval
 
 
@@ -207,7 +237,7 @@ def mejor_movimiento_gato(juego):
         juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
         
         #3- preguntar al cerebro
-        puntaje = minimax(juego_futuro,3,False) #el siguiente turno es del raton por eso false
+        puntaje = minimax(juego_futuro,5,False,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
         
         #4- si este puntaje es mejor que el record
         if puntaje > mejor_puntaje:
@@ -230,7 +260,7 @@ def mejor_movimiento_raton(juego):
         juego_futuro.peones[1].cambiar_posicion(mov[0],mov[1])
         
         #3- preguntar al cerebro
-        puntaje = minimax(juego_futuro,3,True) #el siguiente turno es del raton por eso false
+        puntaje = minimax(juego_futuro,5,True,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
         
         #4- si este puntaje es mejor que el record
         if puntaje < mejor_puntaje:
@@ -238,56 +268,142 @@ def mejor_movimiento_raton(juego):
             mejor_movimiento = mov
     return mejor_movimiento
 
-# esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
-# lo dejo asi y tambien aprendo a trabajar con modulo
-if __name__ == "__main__":
+def obtener_movimiento_humano(juego, peon):
+    #pide input al usuario hasta que ingrese un movimiento legal
+    direcciones = {
+        'w': (0, -1),
+        's': (0, 1),
+        'a': (-1, 0),
+        'd': (1, 0)
+    }
+    while True:
+        try:
+            tecla = input(f"Tu turno ({peon.simbolo}): Usa W, A, S, D: ").lower()
+            if tecla in direcciones:
+                dx, dy = direcciones[tecla]
+                nx, ny = peon.x + dx, peon.y + dy
+                
+                if juego.es_movimiento_valido(nx, ny):
+                    return (nx, ny) #retornar la coord valida
+                else:
+                    print("¡Movimiento inválido! (Muro o Borde)")
+            else:
+                print("Tecla desconocida. Solo W, A, S, D.")
+        except KeyboardInterrupt:
+            print("\nSaliendo del juego...")
+            sys.exit()
+            
+
+
+
     
-    #crear juego y definir turno maximo (TEMPORAAAAAAAAAAAAAAAAL_)((**&())))
-    # muros temporales para pruebas
-    mi_juego = Juego(10, 10, 0 , 50)
+
+# esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
+# lo dejo asi y tambien aprendo a trabajar con modulos
+if __name__ == "__main__":
+    #configuracion del menu
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("="*30)
+    print("🐱 THE DIVE: LABERINTO MINIMAX 🐭")
+    print("="*30)
+    print("1. Jugar como GATO (Cazar al ratón)")
+    print("2. Jugar como RATÓN (Huir y comer queso)")
+    print("3. Modo ESPECTADOR (IA vs IA)")
+    print("="*30)
+    
+    modo = input("Elige una opción (1-3): ")
+    
+    #iniciar el juego
+    #cambiar la cantidad de turnos ACAAAAAAAAAAAAAAAAAAAAAAA
+    mi_juego = Juego(10, 10, 0, 60) 
+    
+    #generar muros en el tablero
     mi_juego.colocar_muro(5, 5)
     mi_juego.colocar_muro(5, 6)
     mi_juego.colocar_muro(5, 7)
-    #crear los peones del tablero
+    mi_juego.colocar_muro(2, 2)
+    mi_juego.colocar_muro(7, 2)
+    
+    #queso para el raton
+    mi_juego.colocar_queso(0, 9) 
+    
+    #los peones (gato :3 y raton)
     tom = Gato(0, 0)
     jerry = Raton(9, 9)
-    #agregar al tablero
     mi_juego.agregar_peon(tom)
     mi_juego.agregar_peon(jerry)
-    #renderizar antes del bucle para ver donde tamos
+    
     mi_juego.renderizar()
     print("--- INICIO ---")
     time.sleep(1)
+
+    #bucle del juego
     while True:
-        print('El Gato Artificial esta pensando. . .')
-        nueva_pos = mejor_movimiento_gato(mi_juego)
+        #turno del GATO
+        if modo == '1':
+            #humano
+            nx, ny = obtener_movimiento_humano(mi_juego, tom)
+            tom.cambiar_posicion(nx, ny)
+        else:
+            #IA
+            print('🐱 El Gato Artificial está pensando...')
+            nueva_pos = mejor_movimiento_gato(mi_juego)
+            if nueva_pos:
+                tom.cambiar_posicion(nueva_pos[0], nueva_pos[1])
         
-        if mi_juego.es_movimiento_valido(nueva_pos[0],nueva_pos[1]):
-            tom.cambiar_posicion(nueva_pos[0],nueva_pos[1])
-            
+        #verificar la condicion de victoria del gato
         if tom.x == jerry.x and tom.y == jerry.y:
             mi_juego.renderizar()
-            print("\n" + "="*30)
-            print("💀 ¡GAME OVER! El Gato ha cenado.")
-            print("="*30)
+            print("\n" + "💀"*10)
+            print(" ¡GAME OVER! El Gato ha cenado.")
+            print("💀"*10)
             break
 
-        #mover aleatoriamente al raton
-        jerry.mover_aleatoriamente(mi_juego)
+        #turno del RATON
+        #renderizar para actualizar tablero
+        mi_juego.renderizar() 
         
-        #avisar si jerry se suicida
+        if modo == '2':
+            #humano
+            nx, ny = obtener_movimiento_humano(mi_juego, jerry)
+            jerry.cambiar_posicion(nx, ny)
+        else:
+            #IA
+            #el raton es tonto por 4 turnos, luego es inteligente
+            if mi_juego.turno < 4: 
+                print("🐭 El Ratón se mueve aleatoriamente (en panico)...")
+                jerry.mover_aleatoriamente(mi_juego)
+            else:
+                print("🐭 El Ratón calcula su escape...")
+                nueva_pos = mejor_movimiento_raton(mi_juego)
+                if nueva_pos:
+                    jerry.cambiar_posicion(nueva_pos[0], nueva_pos[1])
+                else:
+                    print("🐭 ¡Ratón acorralado!")
+
+        #verificar victoria por comer queso
+        if mi_juego.queso and jerry.x == mi_juego.queso[0] and jerry.y == mi_juego.queso[1]:
+            mi_juego.renderizar()
+            print("\n" + "🧀"*10)
+            print(" ¡VICTORIA! El Ratón se comió el queso.")
+            print("🧀"*10)
+            break
+            
+        #verificar si el raton se suicida (muy poco probable)
         if tom.x == jerry.x and tom.y == jerry.y:
             mi_juego.renderizar()
             print("\n💀 ¡El Ratón corrió hacia el Gato! Gana Tom.")
             break
-    
-        #renderizar el movimiento y sumar turno
+
+        #final del turno actual
         mi_juego.turno += 1
+        print(f'Turno actual:{mi_juego.turno}/{mi_juego.max_turnos}')
         mi_juego.renderizar()
         
-        print(f'Turno {mi_juego.turno}/{mi_juego.max_turnos}')
-        #definir la condicion de victoria del raton
         if mi_juego.turno >= mi_juego.max_turnos:
-            print('El Raton sobrevivio. . .\n El gato PIERDE. . .')
+            print("\n Tiempo agotado. El Ratón sobrevive.")
             break
-        time.sleep(0.25)
+            
+        #pausa para ver la pelea de las IAs :3
+        if modo == '3':
+            time.sleep(0.5)
