@@ -159,9 +159,9 @@ def obtener_movimiento_valido(juego, peon):
     movimientos = []
     direcciones = [(0, -1), (0, 1), (-1, 0), (1, 0)]
     for dx, dy in direcciones:
-        nx,ny = peon.x + dx, peon.y + dy
-        if juego.es_movimiento_valido(nx,ny):
-            movimientos.append((nx,ny))
+        n_x,n_y = peon.x + dx, peon.y + dy
+        if juego.es_movimiento_valido(n_x,n_y):
+            movimientos.append((n_x,n_y))
     return movimientos
 
 
@@ -222,7 +222,7 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
         return min_eval
 
 
-def mejor_movimiento_gato(juego):
+def mejor_movimiento_gato(juego,profundidad):
     mejor_puntaje = -float('inf')
     mejor_movimiento = None # luego guardo aca (x,y)
     
@@ -237,7 +237,7 @@ def mejor_movimiento_gato(juego):
         juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
         
         #3- preguntar al cerebro
-        puntaje = minimax(juego_futuro,5,False,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
+        puntaje = minimax(juego_futuro,profundidad,False,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
         
         #4- si este puntaje es mejor que el record
         if puntaje > mejor_puntaje:
@@ -245,7 +245,7 @@ def mejor_movimiento_gato(juego):
             mejor_movimiento = mov
     return mejor_movimiento
 
-def mejor_movimiento_raton(juego):
+def mejor_movimiento_raton(juego,profundidad):
     mejor_puntaje = float('inf')
     mejor_movimiento = None # luego guardo aca (x,y)
     
@@ -260,7 +260,7 @@ def mejor_movimiento_raton(juego):
         juego_futuro.peones[1].cambiar_posicion(mov[0],mov[1])
         
         #3- preguntar al cerebro
-        puntaje = minimax(juego_futuro,5,True,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
+        puntaje = minimax(juego_futuro,profundidad,True,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
         
         #4- si este puntaje es mejor que el record
         if puntaje < mejor_puntaje:
@@ -281,10 +281,10 @@ def obtener_movimiento_humano(juego, peon):
             tecla = input(f"Tu turno ({peon.simbolo}): Usa W, A, S, D: ").lower()
             if tecla in direcciones:
                 dx, dy = direcciones[tecla]
-                nx, ny = peon.x + dx, peon.y + dy
+                n_x, n_y = peon.x + dx, peon.y + dy
                 
-                if juego.es_movimiento_valido(nx, ny):
-                    return (nx, ny) #retornar la coord valida
+                if juego.es_movimiento_valido(n_x, n_y):
+                    return (n_x, n_y) #retornar la coord valida
                 else:
                     print("¡Movimiento inválido! (Muro o Borde)")
             else:
@@ -292,11 +292,41 @@ def obtener_movimiento_humano(juego, peon):
         except KeyboardInterrupt:
             print("\nSaliendo del juego...")
             sys.exit()
-            
 
-
-
+#funcion para agregar distintos muros dependiendo de la dificultad
+def configurar_nivel(juego,dificult):
+    #colocar muro y queso segun la diuficultad
+    juego.colocar_queso(0,9)
     
+    #modo facil
+    if dificult == "1":
+        # Solo un par de piedras para molestar, pero mucho espacio libre
+        juego.colocar_muro(5, 5)
+        juego.colocar_muro(2, 2)
+        print("Mapa cargado: CAMPO ABIERTO (Fácil)")
+        
+    #para el nivel medio
+    elif dificult == "2":
+        juego.colocar_muro(5, 5)
+        juego.colocar_muro(5, 6)
+        juego.colocar_muro(5, 7)
+        juego.colocar_muro(2, 2)
+        juego.colocar_muro(7, 2)
+        juego.colocar_muro(2, 8)
+        print("Mapa cargado: EL BOSQUE (Medio)")
+    #para el nivel dificil
+    elif dificult == "3":
+        juego.colocar_muro(3, 3)
+        juego.colocar_muro(4, 3)
+        juego.colocar_muro(5, 3)
+        juego.colocar_muro(6, 3)
+        juego.colocar_muro(1, 7)
+        juego.colocar_muro(8, 2)
+        juego.colocar_muro(5, 8)
+        
+        #protege un poco el queso
+        juego.colocar_muro(1, 8) 
+        print("Mapa cargado: EL LABERINTO (Difícil)")
 
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulos
@@ -312,20 +342,31 @@ if __name__ == "__main__":
     print("="*30)
     
     modo = input("Elige una opción (1-3): ")
-    
+    PROFUNDIDAD_IA = 6
+    if modo == "1" or modo == "2":
+        dificultad = input("Elige dificultad (1=Fácil, 2=Medio, 3=Imposible): ")
+        if dificultad == "1":
+            PROFUNDIDAD_IA = 1
+        elif dificultad == "2":
+            PROFUNDIDAD_IA = 3
+        elif dificultad == "3":
+            PROFUNDIDAD_IA = 6
+        else:
+            print('Tecla no valida\nSaliendo del juego. . .')
+            sys.exit()
+            
+        
     #iniciar el juego
     #cambiar la cantidad de turnos ACAAAAAAAAAAAAAAAAAAAAAAA
     mi_juego = Juego(10, 10, 0, 60) 
     
-    #generar muros en el tablero
-    mi_juego.colocar_muro(5, 5)
-    mi_juego.colocar_muro(5, 6)
-    mi_juego.colocar_muro(5, 7)
-    mi_juego.colocar_muro(2, 2)
-    mi_juego.colocar_muro(7, 2)
-    
-    #queso para el raton
-    mi_juego.colocar_queso(0, 9) 
+    #generar tablero segun dificultad
+    if modo == "1" or modo == "2":
+        dificultad_mapa = dificultad
+    else:
+        dificultad_mapa = "3"
+
+    configurar_nivel(mi_juego, dificultad_mapa)
     
     #los peones (gato :3 y raton)
     tom = Gato(0, 0)
@@ -347,7 +388,7 @@ if __name__ == "__main__":
         else:
             #IA
             print('🐱 El Gato Artificial está pensando...')
-            nueva_pos = mejor_movimiento_gato(mi_juego)
+            nueva_pos = mejor_movimiento_gato(mi_juego,PROFUNDIDAD_IA)
             if nueva_pos:
                 tom.cambiar_posicion(nueva_pos[0], nueva_pos[1])
         
@@ -375,7 +416,7 @@ if __name__ == "__main__":
                 jerry.mover_aleatoriamente(mi_juego)
             else:
                 print("🐭 El Ratón calcula su escape...")
-                nueva_pos = mejor_movimiento_raton(mi_juego)
+                nueva_pos = mejor_movimiento_raton(mi_juego,PROFUNDIDAD_IA)
                 if nueva_pos:
                     jerry.cambiar_posicion(nueva_pos[0], nueva_pos[1])
                 else:
@@ -397,7 +438,7 @@ if __name__ == "__main__":
 
         #final del turno actual
         mi_juego.turno += 1
-        print(f'Turno actual:{mi_juego.turno}/{mi_juego.max_turnos}')
+
         mi_juego.renderizar()
         
         if mi_juego.turno >= mi_juego.max_turnos:
