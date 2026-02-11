@@ -1,3 +1,4 @@
+from crear_mapa import configurar_nivel
 import random
 import os
 import copy
@@ -142,18 +143,39 @@ def evaluar_tablero(juego):
     if juego.turno >= juego.max_turnos:
         return -1000
     
-    #heuristica combinada
-    dist_gato = calcular_distancia(gato.x, gato.y, raton.x, raton.y)
+    #calculo de distancias
+    dist_gato_raton = calcular_distancia(gato.x, gato.y, raton.x, raton.y)
     
     if juego.queso:
-        dist_queso = calcular_distancia(raton.x,raton.y, juego.queso[0],juego.queso[1])
+        dist_raton_queso = calcular_distancia(raton.x, raton.y, juego.queso[0], juego.queso[1])
+        dist_gato_queso = calcular_distancia(gato.x, gato.y, juego.queso[0], juego.queso[1])
     else:
-        dist_queso = 0
+        dist_raton_queso = 0
+        dist_gato_queso = 0
     
-    #aplico una formula que calcula el posible valor conveniente para cada peon
-    return (100 - (dist_gato*3)) + dist_queso
+    #logica de adaptabilidad para el pensamiento
+    #==============pensamiento del raton (minimizar)
+    if dist_gato_raton > 4:
+        #en zona segura la prioridad es el queso
+        score_raton = dist_raton_queso * 4
+    else:
+        #en zona de peligro la prioridad es huir del gato
+        score_raton = (10 - dist_gato_raton) * 5 + dist_raton_queso
 
-
+    #==============pensamiento del gato (maximizar)
+    score_gato = (20 - dist_gato_raton) * 2
+    
+    #modo alerta si el raton esta mas cerca del queso que el
+    if dist_raton_queso < dist_gato_queso:
+        score_gato += (20 - dist_gato_queso) * 2
+        
+    #factor anti bucle con ruido aleatorio (evitar bucles de arriba abajo)
+    ruido = random.uniform(-0.5, 0.5)
+    
+    #formula final: gato(positivo) - raton(negativo)
+    heuristica_final = score_gato - score_raton + ruido
+    return heuristica_final
+    
 #funcion auxiliar para tener los movimientos posibles
 def obtener_movimiento_valido(juego, peon):
     movimientos = []
@@ -293,40 +315,6 @@ def obtener_movimiento_humano(juego, peon):
             print("\nSaliendo del juego...")
             sys.exit()
 
-#funcion para agregar distintos muros dependiendo de la dificultad
-def configurar_nivel(juego,dificult):
-    #colocar muro y queso segun la diuficultad
-    juego.colocar_queso(0,9)
-    
-    #modo facil
-    if dificult == "1":
-        # Solo un par de piedras para molestar, pero mucho espacio libre
-        juego.colocar_muro(5, 5)
-        juego.colocar_muro(2, 2)
-        print("Mapa cargado: CAMPO ABIERTO (Fácil)")
-        
-    #para el nivel medio
-    elif dificult == "2":
-        juego.colocar_muro(5, 5)
-        juego.colocar_muro(5, 6)
-        juego.colocar_muro(5, 7)
-        juego.colocar_muro(2, 2)
-        juego.colocar_muro(7, 2)
-        juego.colocar_muro(2, 8)
-        print("Mapa cargado: EL BOSQUE (Medio)")
-    #para el nivel dificil
-    elif dificult == "3":
-        juego.colocar_muro(3, 3)
-        juego.colocar_muro(4, 3)
-        juego.colocar_muro(5, 3)
-        juego.colocar_muro(6, 3)
-        juego.colocar_muro(1, 7)
-        juego.colocar_muro(8, 2)
-        juego.colocar_muro(5, 8)
-        
-        #protege un poco el queso
-        juego.colocar_muro(1, 8) 
-        print("Mapa cargado: EL LABERINTO (Difícil)")
 
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulos
@@ -358,7 +346,7 @@ if __name__ == "__main__":
         
     #iniciar el juego
     #cambiar la cantidad de turnos ACAAAAAAAAAAAAAAAAAAAAAAA
-    mi_juego = Juego(10, 10, 0, 60) 
+    mi_juego = Juego(12,9,0,120) 
     
     #generar tablero segun dificultad
     if modo == "1" or modo == "2":
@@ -370,7 +358,7 @@ if __name__ == "__main__":
     
     #los peones (gato :3 y raton)
     tom = Gato(0, 0)
-    jerry = Raton(9, 9)
+    jerry = Raton(11,8)
     mi_juego.agregar_peon(tom)
     mi_juego.agregar_peon(jerry)
     
