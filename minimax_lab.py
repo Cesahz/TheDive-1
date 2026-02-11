@@ -127,55 +127,75 @@ def calcular_distancia(x1, y1, x2, y2):
     distancia_pasos = diferencia_x + diferencia_y
     return distancia_pasos
 
-#funciona para evaluar el tablero
+
+#funcion para evaluar el tablero (version ajustada)
 def evaluar_tablero(juego):
     gato = juego.peones[0]
     raton = juego.peones[1]
-    #condicion de victoria para el gato :3
+    
+    #condiciones de victoria/derrota
     if gato.x == raton.x and gato.y == raton.y:
-        return 1000
+        return 1000 #el gato gana
     
-    #condicion de victoria para el raton
     if juego.queso and raton.x == juego.queso[0] and raton.y == juego.queso[1]:
-        return -1000
+        return -1000 #el raton gana
     
-    #victoria por tiempo del raton
     if juego.turno >= juego.max_turnos:
-        return -1000
-    
+        return -1000 #el raton por tiempo
+
     #calculo de distancias
     dist_gato_raton = calcular_distancia(gato.x, gato.y, raton.x, raton.y)
     
+    dist_raton_queso = 0
+    dist_gato_queso = 0
     if juego.queso:
         dist_raton_queso = calcular_distancia(raton.x, raton.y, juego.queso[0], juego.queso[1])
         dist_gato_queso = calcular_distancia(gato.x, gato.y, juego.queso[0], juego.queso[1])
-    else:
-        dist_raton_queso = 0
-        dist_gato_queso = 0
-    
-    #logica de adaptabilidad para el pensamiento
-    #==============pensamiento del raton (minimizar)
-    if dist_gato_raton > 4:
-        #en zona segura la prioridad es el queso
-        score_raton = dist_raton_queso * 4
-    else:
-        #en zona de peligro la prioridad es huir del gato
-        score_raton = (10 - dist_gato_raton) * 5 + dist_raton_queso
 
-    #==============pensamiento del gato (maximizar)
-    score_gato = (20 - dist_gato_raton) * 2
+    #PENSAMIENTO DEL GATO (MAXIMIZAR)
+    #acercarse al raton
+    score_gato = (30 - dist_gato_raton) * 4
     
-    #modo alerta si el raton esta mas cerca del queso que el
-    if dist_raton_queso < dist_gato_queso:
-        score_gato += (20 - dist_gato_queso) * 2
+    #si esta muy cerca le premiamos
+    if dist_gato_raton <= 2:
+        score_gato += 20 
+
+    #si el raton esta cerca del gato el gato intercepta
+    if dist_raton_queso < 5:
+        score_gato += (30 - dist_gato_queso) * 5
+
+    #PENSAMIENTO DEL RATON (MINIMIZAR)
+    score_raton = 0
+    
+    #logica nueva: si el raton tiene ventaja de distancia y no esta en peligro inmediato
+    tengo_ventaja = dist_raton_queso < dist_gato_queso
+    estoy_seguro = dist_gato_raton > 2
+    
+    if tengo_ventaja and estoy_seguro:
+        #ignora al gato y corre al queso
+        #puntaje alto para dar prioridad
+        score_raton = (30 - dist_raton_queso) * 10
         
-    #factor anti bucle con ruido aleatorio (evitar bucles de arriba abajo)
+    elif dist_gato_raton <= 2:
+        #modo panico, retirada
+        score_raton = dist_gato_raton * 8
+        
+    else:
+        #modo normal
+        score_raton = (30 - dist_raton_queso) * 4
+
+    #PENSAMIENTOS EXTRA
+    #impaciencia del gato, cuando mas temprano el turno mejor el puntaje a favor del gato
+    impaciencia = juego.turno * 0.5
+
+    #ruido para romper empates y evitar bucles tontos
     ruido = random.uniform(-0.5, 0.5)
-    
-    #formula final: gato(positivo) - raton(negativo)
-    heuristica_final = score_gato - score_raton + ruido
-    return heuristica_final
-    
+
+    #formula final
+    return score_gato - score_raton - impaciencia + ruido
+
+
+
 #funcion auxiliar para tener los movimientos posibles
 def obtener_movimiento_valido(juego, peon):
     movimientos = []
