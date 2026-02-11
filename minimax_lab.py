@@ -5,6 +5,8 @@ import copy
 import sys
 import time
 
+# -1
+
 #configuracion de variables y configuraciones globales
 
 SIMBOLO_VACIO = '⬜' 
@@ -47,6 +49,8 @@ class Raton(Peon):
                 self.cambiar_posicion(nueva_x,nueva_y)
                 return
 
+# -2
+
 #aca defino la clase mas importante, que seria la del juego o sistema
 class Juego:
     #este es como el dios, sabe todo lo que pasa en las ejecuciones, turnos, que hay en el tablero etc
@@ -63,7 +67,13 @@ class Juego:
     
     def generar_tablero_vacio(self):
         #llenar el tablero con valores limpias como '.' para que sea el tablero base
-        self.tablero = [[SIMBOLO_VACIO for i in range(self.ancho)] for i in range(self.alto)]
+        #lo hago con bucles normales para que se entienda mejor y sea mas visual
+        self.tablero = []
+        for _ in range(self.alto):
+            fila = []
+            for _ in range(self.ancho):
+                fila.append(SIMBOLO_VACIO)
+            self.tablero.append(fila)
     
     def agregar_peon(self, peon):
         #recibe el tipo de peon: gato o raton y agrega a la lista
@@ -71,19 +81,23 @@ class Juego:
     
     def colocar_muro(self,x,y):
         #coloca un obstaculo (muro) en una coord especifica
-        if 0 <= x < self.ancho and 0 <= y < self.alto:
-            self.tablero[y][x] = SIMBOLO_MURO
+        #verifico que este dentro de los limites antes de colocar
+        if x >= 0 and x < self.ancho:
+            if y >= 0 and y < self.alto:
+                self.tablero[y][x] = SIMBOLO_MURO
 
     def colocar_queso(self,x,y):
-        if 0 <= x < self.ancho and 0 <= y < self.alto:
-            self.tablero[y][x] = SIMBOLO_QUESO
-            self.queso = (x,y)
+        if x >= 0 and x < self.ancho:
+            if y >= 0 and y < self.alto:
+                self.tablero[y][x] = SIMBOLO_QUESO
+                self.queso = (x,y)
 
 
     def renderizar(self):
         #este dibuja el estado de la consola en el presente de su ejecucion
         comando = "cls" if os.name == "nt" else 'clear'
         os.system(comando)
+
         print('----Laberinto del gato y el raton----')
         #una copia de seguridad
         #nota : deepcopy crea una clon independiente que no toca al original
@@ -96,11 +110,15 @@ class Juego:
             py = peon.y
             
             #controlar que no este fuera del tablero
-            if 0 <= px < self.ancho and 0 <= py < self.alto:
-                tablero_visual[py][px] = peon.simbolo
+            if px >= 0 and px < self.ancho:
+                if py >= 0 and py < self.alto:
+                    tablero_visual[py][px] = peon.simbolo
                 
         for fila in tablero_visual:
-            texto_fila = ''.join(fila)
+            #uno los elementos de la fila en un solo texto de forma tradicional
+            texto_fila = ""
+            for elemento in fila:
+                texto_fila = texto_fila + elemento
             print(texto_fila)
     
     def es_movimiento_valido(self,x,y):
@@ -127,6 +145,7 @@ def calcular_distancia(x1, y1, x2, y2):
     distancia_pasos = diferencia_x + diferencia_y
     return distancia_pasos
 
+# -3
 
 #funcion para evaluar el tablero (version ajustada)
 def evaluar_tablero(juego):
@@ -158,11 +177,11 @@ def evaluar_tablero(juego):
     
     #si esta muy cerca le premiamos
     if dist_gato_raton <= 2:
-        score_gato += 20 
+        score_gato = score_gato + 20 
 
     #si el raton esta cerca del gato el gato intercepta
     if dist_raton_queso < 5:
-        score_gato += (30 - dist_gato_queso) * 5
+        score_gato = score_gato + (30 - dist_gato_queso) * 5
 
     #PENSAMIENTO DEL RATON (MINIMIZAR)
     score_raton = 0
@@ -194,14 +213,17 @@ def evaluar_tablero(juego):
     #formula final
     return score_gato - score_raton - impaciencia + ruido
 
-
+# -4
 
 #funcion auxiliar para tener los movimientos posibles
 def obtener_movimiento_valido(juego, peon):
     movimientos = []
     direcciones = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-    for dx, dy in direcciones:
-        n_x,n_y = peon.x + dx, peon.y + dy
+    for d in direcciones:
+        dx = d[0]
+        dy = d[1]
+        n_x = peon.x + dx
+        n_y = peon.y + dy
         if juego.es_movimiento_valido(n_x,n_y):
             movimientos.append((n_x,n_y))
     return movimientos
@@ -210,8 +232,12 @@ def obtener_movimiento_valido(juego, peon):
 
 #el cerebro de las IAs, la funcion que piensa los movimientos
 def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
-    if profundidad == 0 or abs(evaluar_tablero(juego_copia)) == 1000:
+    if profundidad == 0:
         return evaluar_tablero(juego_copia)
+    
+    valor_tablero = evaluar_tablero(juego_copia)
+    if abs(valor_tablero) == 1000:
+        return valor_tablero
     
     #turno del gato (busca maximizar el puntaje)
     if es_turno_gato:
@@ -232,9 +258,12 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
             evaluacion = minimax(juego_futuro, profundidad - 1, False,alpha,beta)
             
             #4- elegir la mejor opcion
-            max_eval = max(max_eval, evaluacion)
+            if evaluacion > max_eval:
+                max_eval = evaluacion
             
             #PODA (corte)
+            if evaluacion > alpha:
+                alpha = evaluacion
             if beta <= alpha:
                 break
         return max_eval
@@ -255,14 +284,18 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
             evaluacion = minimax(juego_futuro, profundidad - 1, True, alpha, beta)
             
             #4- elegir el menor valor
-            min_eval = min(min_eval, evaluacion)
+            if evaluacion < min_eval:
+                min_eval = evaluacion
             
             #PODA (corte)
+            if evaluacion < beta:
+                beta = evaluacion
             if beta <= alpha:
                 break #cortar porque el gato no deja que llegue a ese estado tan bueno
 
         return min_eval
 
+# -5
 
 def mejor_movimiento_gato(juego,profundidad):
     mejor_puntaje = -float('inf')
@@ -322,8 +355,11 @@ def obtener_movimiento_humano(juego, peon):
         try:
             tecla = input(f"Tu turno ({peon.simbolo}): Usa W, A, S, D: ").lower()
             if tecla in direcciones:
-                dx, dy = direcciones[tecla]
-                n_x, n_y = peon.x + dx, peon.y + dy
+                d = direcciones[tecla]
+                dx = d[0]
+                dy = d[1]
+                n_x = peon.x + dx
+                n_y = peon.y + dy
                 
                 if juego.es_movimiento_valido(n_x, n_y):
                     return (n_x, n_y) #retornar la coord valida
@@ -335,11 +371,14 @@ def obtener_movimiento_humano(juego, peon):
             print("\nSaliendo del juego...")
             sys.exit()
 
+# -6
 
+# -7
 # esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
 # lo dejo asi y tambien aprendo a trabajar con modulos
 if __name__ == "__main__":
     #configuracion del menu
+    
     os.system('cls' if os.name == 'nt' else 'clear')
     print("="*30)
     print("🐱 THE DIVE: LABERINTO MINIMAX 🐭")
@@ -365,7 +404,6 @@ if __name__ == "__main__":
             
         
     #iniciar el juego
-    #cambiar la cantidad de turnos ACAAAAAAAAAAAAAAAAAAAAAAA
     mi_juego = Juego(12,9,0,120) 
     
     #generar tablero segun dificultad
