@@ -275,6 +275,7 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
         
         for mov in posibles_movs:
             #1- clonar
+            
             juego_futuro = copy.deepcopy(juego_copia)
             
             #2- simular
@@ -404,7 +405,7 @@ if __name__ == "__main__":
             
         
     #iniciar el juego
-    mi_juego = Juego(12,9,0,120) 
+    mi_juego = Juego(16,9,0,120) 
     
     #generar tablero segun dificultad
     if modo == "1" or modo == "2":
@@ -416,7 +417,7 @@ if __name__ == "__main__":
     
     #los peones (gato :3 y raton)
     tom = Gato(0, 0)
-    jerry = Raton(11,8)
+    jerry = Raton(15,7)
     mi_juego.agregar_peon(tom)
     mi_juego.agregar_peon(jerry)
     

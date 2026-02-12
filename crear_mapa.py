@@ -2,20 +2,38 @@ def configurar_nivel(juego,dificult):
     #colocar muro y queso segun la diuficultad
     #modo facil
     if dificult == "1":
-        # Solo un par de piedras para molestar, pero mucho espacio libre
-        juego.colocar_queso(10, 1)
-        muros = [(3,3), (3,5), (8,3), (8,5), (5,2), (5,6)]
-        for x, y in muros:
-            juego.colocar_muro(x, y)
-            
-        for x in range(1, 4):
-            juego.colocar_muro(x, 2)
-            
-        for x in range(8, 11):
-            juego.colocar_muro(x, 6)
+        # colocar queso
+        juego.colocar_queso(8, 6)
+        # colocar los muros
+        juego.colocar_muro(0,0)
+        juego.colocar_muro(1,0)
+        juego.colocar_muro(0,1)
+        juego.colocar_muro(14,0)
+        juego.colocar_muro(15,0)
+        juego.colocar_muro(15,1)
+        juego.colocar_muro(2,2)
+        juego.colocar_muro(3,2)
+        juego.colocar_muro(2,3)
+        juego.colocar_muro(6,2)
+        juego.colocar_muro(7,2)
+        juego.colocar_muro(8,2)
+        juego.colocar_muro(11,2)
+        juego.colocar_muro(12,2)
+        juego.colocar_muro(12,3)
+        juego.colocar_muro(7,4)
+        juego.colocar_muro(8,4)
+        juego.colocar_muro(5,5)
+        juego.colocar_muro(6,5)
+        juego.colocar_muro(9,5)
+        juego.colocar_muro(0,6)
+        juego.colocar_muro(10,6)
+        juego.colocar_muro(11,6)
+        juego.colocar_muro(15,6)
+        juego.colocar_muro(0,8)
+        juego.colocar_muro(1,8)
+        juego.colocar_muro(13,8)
+        juego.colocar_muro(14,8)
 
-        juego.colocar_muro(0, 5)
-        juego.colocar_muro(11, 3)
         print("Mapa cargado: LA ZONA URBANA (Medio)")
         
     #para el nivel medio
@@ -61,6 +79,18 @@ def configurar_nivel(juego,dificult):
         juego.colocar_muro(11,4)
         juego.colocar_muro(11,5)
         juego.colocar_muro(10,6)
-        
-        
+        juego.colocar_muro(13,1)
+        juego.colocar_muro(13,2)
+        juego.colocar_muro(13,4)
+        juego.colocar_muro(13,5)
+        juego.colocar_muro(12,8)
+        juego.colocar_muro(11,8)
+        juego.colocar_muro(10,8)
+        juego.colocar_muro(13,8)
+        juego.colocar_muro(15,8)
+        juego.colocar_muro(14,8)
+        juego.colocar_muro(14,2)
+        juego.colocar_muro(14,3)
+        juego.colocar_muro(14,4)
+
         print("Mapa cargado: EL LABERINTO (Difícil)")
