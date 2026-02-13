@@ -495,3 +495,4 @@ if __name__ == "__main__":
         #pausa para ver la pelea de las IAs :3
         if modo == '3':
             time.sleep(0.5)
+
