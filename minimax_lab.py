@@ -9,11 +9,12 @@ import time
 
 #configuracion de variables y configuraciones globales
 
-SIMBOLO_VACIO = '⬜' 
+SIMBOLO_VACIO = '⬜'
 SIMBOLO_MURO = '🧱'
 SIMBOLO_GATO = '🐱'
 SIMBOLO_RATON = '🐭'
 SIMBOLO_QUESO = '🧀'
+PROFUNDIDAD_IA = 6
 
 #definir las clases
 #una clase para cualquier cosa que viva en el tablero, peon me parecio adecuado
@@ -374,123 +375,119 @@ def obtener_movimiento_humano(juego, peon):
 # -6
 
 # -7
-# esta condicional inicial es por si luego quiero importar en otro archivo para hacer pruebas, por ahora
-# lo dejo asi y tambien aprendo a trabajar con modulos
-if __name__ == "__main__":
-    #configuracion del menu
-    
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print("="*30)
-    print("🐱 THE DIVE: LABERINTO MINIMAX 🐭")
-    print("="*30)
-    print("1. Jugar como GATO (Cazar al ratón)")
-    print("2. Jugar como RATÓN (Huir y comer queso)")
-    print("3. Modo ESPECTADOR (IA vs IA)")
-    print("="*30)
-    
-    modo = input("Elige una opción (1-3): ")
-    PROFUNDIDAD_IA = 6
-    if modo == "1" or modo == "2":
-        dificultad = input("Elige dificultad (1=Fácil, 2=Medio, 3=Imposible): ")
-        if dificultad == "1":
-            PROFUNDIDAD_IA = 1
-        elif dificultad == "2":
-            PROFUNDIDAD_IA = 3
-        elif dificultad == "3":
-            PROFUNDIDAD_IA = 6
-        else:
-            print('Tecla no valida\nSaliendo del juego. . .')
-            sys.exit()
-            
-        
-    #iniciar el juego
-    mi_juego = Juego(12,9,0,120) 
-    
-    #generar tablero segun dificultad
-    if modo == "1" or modo == "2":
-        dificultad_mapa = dificultad
+#configuracion del menu
+
+os.system('cls' if os.name == 'nt' else 'clear')
+print("="*30)
+print("🐱 THE DIVE: LABERINTO MINIMAX 🐭")
+print("="*30)
+print("1. Jugar como GATO (Cazar al ratón)")
+print("2. Jugar como RATÓN (Huir y comer queso)")
+print("3. Modo ESPECTADOR (IA vs IA)")
+print("="*30)
+
+modo = input("Elige una opción (1-3): ")
+if modo == "1" or modo == "2":
+    dificultad = input("Elige dificultad (1=Fácil, 2=Medio, 3=Imposible): ")
+    if dificultad == "1":
+        PROFUNDIDAD_IA = 1
+    elif dificultad == "2":
+        PROFUNDIDAD_IA = 3
+    elif dificultad == "3":
+        PROFUNDIDAD_IA = 6
     else:
-        dificultad_mapa = "3"
-
-    configurar_nivel(mi_juego, dificultad_mapa)
-    
-    #los peones (gato :3 y raton)
-    tom = Gato(0, 0)
-    jerry = Raton(11,8)
-    mi_juego.agregar_peon(tom)
-    mi_juego.agregar_peon(jerry)
-    
-    mi_juego.renderizar()
-    print("--- INICIO ---")
-    time.sleep(1)
-
-    #bucle del juego
-    while True:
-        #turno del GATO
-        if modo == '1':
-            #humano
-            nx, ny = obtener_movimiento_humano(mi_juego, tom)
-            tom.cambiar_posicion(nx, ny)
-        else:
-            #IA
-            print('🐱 El Gato Artificial está pensando...')
-            nueva_pos = mejor_movimiento_gato(mi_juego,PROFUNDIDAD_IA)
-            if nueva_pos:
-                tom.cambiar_posicion(nueva_pos[0], nueva_pos[1])
+        print('Tecla no valida\nSaliendo del juego. . .')
+        sys.exit()
         
-        #verificar la condicion de victoria del gato
-        if tom.x == jerry.x and tom.y == jerry.y:
-            mi_juego.renderizar()
-            print("\n" + "💀"*10)
-            print(" ¡GAME OVER! El Gato ha cenado.")
-            print("💀"*10)
-            break
+    
+#iniciar el juego
+mi_juego = Juego(12,9,0,120) 
 
-        #turno del RATON
-        #renderizar para actualizar tablero
-        mi_juego.renderizar() 
-        
-        if modo == '2':
-            #humano
-            nx, ny = obtener_movimiento_humano(mi_juego, jerry)
-            jerry.cambiar_posicion(nx, ny)
-        else:
-            #IA
-            #el raton es tonto por 4 turnos, luego es inteligente
-            if mi_juego.turno < 4: 
-                print("🐭 El Ratón se mueve aleatoriamente (en panico)...")
-                jerry.mover_aleatoriamente(mi_juego)
-            else:
-                print("🐭 El Ratón calcula su escape...")
-                nueva_pos = mejor_movimiento_raton(mi_juego,PROFUNDIDAD_IA)
-                if nueva_pos:
-                    jerry.cambiar_posicion(nueva_pos[0], nueva_pos[1])
-                else:
-                    print("🐭 ¡Ratón acorralado!")
+#generar tablero segun dificultad
+if modo == "1" or modo == "2":
+    dificultad_mapa = dificultad
+else:
+    dificultad_mapa = "3"
 
-        #verificar victoria por comer queso
-        if mi_juego.queso and jerry.x == mi_juego.queso[0] and jerry.y == mi_juego.queso[1]:
-            mi_juego.renderizar()
-            print("\n" + "🧀"*10)
-            print(" ¡VICTORIA! El Ratón se comió el queso.")
-            print("🧀"*10)
-            break
-            
-        #verificar si el raton se suicida (muy poco probable)
-        if tom.x == jerry.x and tom.y == jerry.y:
-            mi_juego.renderizar()
-            print("\n💀 ¡El Ratón corrió hacia el Gato! Gana Tom.")
-            break
+configurar_nivel(mi_juego, dificultad_mapa)
 
-        #final del turno actual
-        mi_juego.turno += 1
+#los peones (gato :3 y raton)
+tom = Gato(0, 0)
+jerry = Raton(11,8)
+mi_juego.agregar_peon(tom)
+mi_juego.agregar_peon(jerry)
 
+mi_juego.renderizar()
+print("--- INICIO ---")
+time.sleep(1)
+
+#bucle del juego
+while True:
+    #turno del GATO
+    if modo == '1':
+        #humano
+        nx, ny = obtener_movimiento_humano(mi_juego, tom)
+        tom.cambiar_posicion(nx, ny)
+    else:
+        #IA
+        print('🐱 El Gato Artificial está pensando...')
+        nueva_pos = mejor_movimiento_gato(mi_juego,PROFUNDIDAD_IA)
+        if nueva_pos:
+            tom.cambiar_posicion(nueva_pos[0], nueva_pos[1])
+    
+    #verificar la condicion de victoria del gato
+    if tom.x == jerry.x and tom.y == jerry.y:
         mi_juego.renderizar()
+        print("\n" + "💀"*10)
+        print(" ¡GAME OVER! El Gato ha cenado.")
+        print("💀"*10)
+        break
+
+    #turno del RATON
+    #renderizar para actualizar tablero
+    mi_juego.renderizar()
+    
+    if modo == '2':
+        #humano
+        nx, ny = obtener_movimiento_humano(mi_juego, jerry)
+        jerry.cambiar_posicion(nx, ny)
+    else:
+        #IA
+        #el raton es tonto por 4 turnos, luego es inteligente
+        if mi_juego.turno < 4: 
+            print("🐭 El Ratón se mueve aleatoriamente (en panico)...")
+            jerry.mover_aleatoriamente(mi_juego)
+        else:
+            print("🐭 El Ratón calcula su escape...")
+            nueva_pos = mejor_movimiento_raton(mi_juego,PROFUNDIDAD_IA)
+            if nueva_pos:
+                jerry.cambiar_posicion(nueva_pos[0], nueva_pos[1])
+            else:
+                print("🐭 ¡Ratón acorralado!")
+
+    #verificar victoria por comer queso
+    if mi_juego.queso and jerry.x == mi_juego.queso[0] and jerry.y == mi_juego.queso[1]:
+        mi_juego.renderizar()
+        print("\n" + "🧀"*10)
+        print(" ¡VICTORIA! El Ratón se comió el queso.")
+        print("🧀"*10)
+        break
         
-        if mi_juego.turno >= mi_juego.max_turnos:
-            print("\n Tiempo agotado. El Ratón sobrevive.")
-            break
-            
-        #pausa para ver la pelea de las IAs :3
-        if modo == '3':
-            time.sleep(0.5)
+    #verificar si el raton se suicida (muy poco probable)
+    if tom.x == jerry.x and tom.y == jerry.y:
+        mi_juego.renderizar()
+        print("\n💀 ¡El Ratón corrió hacia el Gato! Gana Tom.")
+        break
+
+    #final del turno actual
+    mi_juego.turno += 1
+
+    mi_juego.renderizar()
+    
+    if mi_juego.turno >= mi_juego.max_turnos:
+        print("\n Tiempo agotado. El Ratón sobrevive.")
+        break
+        
+    #pausa para ver la pelea de las IAs :3
+    if modo == '3':
+        time.sleep(0.2)
