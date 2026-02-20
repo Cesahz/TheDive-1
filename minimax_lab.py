@@ -18,6 +18,7 @@ PROFUNDIDAD_IA = 6
 
 #definir las clases
 #una clase para cualquier cosa que viva en el tablero, peon me parecio adecuado
+#///
 class Peon:
     #constructor basico, recibe coordenadas y simbolo para dibujarse
     def __init__(self, x, y, simbolo):
@@ -31,12 +32,14 @@ class Peon:
         self.x = nueva_x
         self.y = nueva_y
 
+#///
 class Gato(Peon):
     #gato malo, tiene que atrapar al raton para poder ganar
     def __init__(self, x, y):
         #llamar al metodo constructor de la clase padre
         super().__init__(x, y, SIMBOLO_GATO)
-        
+
+#///    
 class Raton(Peon):
     #sera la presa, su objetivo es comer queso y tambien maximizar distancia
     def __init__(self, x, y):
@@ -57,6 +60,7 @@ class Raton(Peon):
 # -2
 
 #aca defino la clase mas importante, que seria la del juego o sistema
+#///
 class Juego:
     #este es como el dios, sabe todo lo que pasa en las ejecuciones, turnos, que hay en el tablero etc
     def __init__(self,ancho,alto,turno_actual,max_turnos):
@@ -115,12 +119,12 @@ class Juego:
             px = peon.x
             py = peon.y
             
-            #controlar que no este fuera del tablero
+            #controlar que no este fuera del tablero y pintar los simbolos
             if px >= 0 and px < self.ancho:
                 if py >= 0 and py < self.alto:
                     tablero_visual[py][px] = peon.simbolo
 
-        #uno los elementos de la fila en un solo texto de forma tradicional 
+        #imprimir el tablero de forma bonita 
         for fila in tablero_visual:
             texto_fila = ""
             for elemento in fila:
@@ -144,7 +148,8 @@ class Juego:
         #si pasa todas la pruebas me devuelve true
         return True
 
-#funcion para medir distancia
+#funcion para medir distancia manhattan entre dos puntos
+#///
 def calcular_distancia(x1, y1, x2, y2):
     diferencia_x = abs(x1 - x2)
     diferencia_y = abs(y1 - y2)
@@ -153,18 +158,25 @@ def calcular_distancia(x1, y1, x2, y2):
 
 # -3
 
-#funcion para evaluar el tablero (version ajustada)
+#HEURISTICA DE EVALUACION
+#puntaje positivo para el gato, negativo para el raton.
+#///
 def evaluar_tablero(juego):
+    #gato maximiza y el raton minimizar
     gato = juego.peones[0]
     raton = juego.peones[1]
     
     #condiciones de victoria/derrota
+    
+    #para el gato
     if gato.x == raton.x and gato.y == raton.y:
         return 1000 #el gato gana
     
+    #para el raton cuando come el queso
     if juego.queso and raton.x == juego.queso[0] and raton.y == juego.queso[1]:
         return -1000 #el raton gana
     
+    #gana el raton por tiempo 
     if juego.turno >= juego.max_turnos:
         return -1000 #el raton por tiempo
 
@@ -185,9 +197,10 @@ def evaluar_tablero(juego):
     if dist_gato_raton <= 2:
         score_gato = score_gato + 20 
 
-    #si el raton esta cerca del gato el gato intercepta
+    #si el queso esta cerca del raton, el gato intercepta
     if dist_raton_queso < 5:
         score_gato = score_gato + (30 - dist_gato_queso) * 5
+
 
     #PENSAMIENTO DEL RATON (MINIMIZAR)
     score_raton = 0
@@ -201,7 +214,8 @@ def evaluar_tablero(juego):
         #puntaje alto para dar prioridad
         score_raton = (30 - dist_raton_queso) * 10
         
-    elif dist_gato_raton <= 2:
+    #si el gato esta muy cerca, el raton entra en panico y se aleja
+    elif dist_gato_raton <= 1:
         #modo panico, retirada
         score_raton = dist_gato_raton * 8
         
@@ -222,6 +236,7 @@ def evaluar_tablero(juego):
 # -4
 
 #funcion auxiliar para tener los movimientos posibles
+#///
 def obtener_movimiento_valido(juego, peon):
     movimientos = []
     direcciones = [(0, -1), (0, 1), (-1, 0), (1, 0)]
@@ -237,19 +252,23 @@ def obtener_movimiento_valido(juego, peon):
 
 
 #el cerebro de las IAs, la funcion que piensa los movimientos
+#///
 def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
-    if profundidad == 0:
-        return evaluar_tablero(juego_copia)
+
+    #!!!!!!!!!!!!RECORDATORIO: en el futuro reemplazar la forma de simular la jugada futura, investigar sobre backtracking para mejor eficiencia
     
     valor_tablero = evaluar_tablero(juego_copia)
+    
+    if profundidad == 0:
+        return evaluar_tablero(juego_copia)
+
     if abs(valor_tablero) == 1000:
         return valor_tablero
     
     #turno del gato (busca maximizar el puntaje)
     if es_turno_gato:
         max_eval = -float('inf') #el peor puntaje posible
-        
-        #obtener al gato de la copia 
+        #obtener al gato de la copia
         gato_copia = juego_copia.peones[0]
         posibles_movs = obtener_movimiento_valido(juego_copia,gato_copia)
         
@@ -260,16 +279,20 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
             #2- simular que muevo al gato en ese futuro
             juego_futuro.peones[0].cambiar_posicion(mov[0],mov[1])
             
-            #3- recursividad: que pasa despues? 
+            #3- recursividad: que pasa despues?
+            #me devuelve el mejor puntaje que el gato puede conseguir a partir de ese movimiento, suponiendo que el raton tambien juega bien
             evaluacion = minimax(juego_futuro, profundidad - 1, False,alpha,beta)
             
             #4- elegir la mejor opcion
             if evaluacion > max_eval:
                 max_eval = evaluacion
             
-            #PODA (corte)
+            #actualizar alpha
             if evaluacion > alpha:
                 alpha = evaluacion
+
+            #PODA
+            #si el raton encontro un puntaje que al gato no le favorece, el gato no deja que llegue a ese estado tan bueno, entonces corta esa ramadirectamente
             if beta <= alpha:
                 break
         return max_eval
@@ -296,13 +319,15 @@ def minimax(juego_copia, profundidad, es_turno_gato, alpha, beta):
             #PODA (corte)
             if evaluacion < beta:
                 beta = evaluacion
+            
+            #el raton obviamente no va a seguir mirando si ya sabe que el gato no va a dejar que llegue a ese punto
             if beta <= alpha:
                 break #cortar porque el gato no deja que llegue a ese estado tan bueno
 
         return min_eval
 
 # -5
-
+#///
 def mejor_movimiento_gato(juego,profundidad):
     mejor_puntaje = -float('inf')
     mejor_movimiento = None # luego guardo aca (x,y)
@@ -321,11 +346,13 @@ def mejor_movimiento_gato(juego,profundidad):
         puntaje = minimax(juego_futuro,profundidad,False,-float('inf'), float('inf')) #el siguiente turno es del raton por eso false
         
         #4- si este puntaje es mejor que el record
+        #cada que supera su record, actualiza el mejor movimiento
         if puntaje > mejor_puntaje:
             mejor_puntaje = puntaje
             mejor_movimiento = mov
     return mejor_movimiento
 
+#///
 def mejor_movimiento_raton(juego,profundidad):
     mejor_puntaje = float('inf')
     mejor_movimiento = None # luego guardo aca (x,y)
@@ -349,6 +376,7 @@ def mejor_movimiento_raton(juego,profundidad):
             mejor_movimiento = mov
     return mejor_movimiento
 
+#///
 def obtener_movimiento_humano(juego, peon):
     #pide input al usuario hasta que ingrese un movimiento legal
     direcciones = {
@@ -358,6 +386,7 @@ def obtener_movimiento_humano(juego, peon):
         'd': (1, 0)
     }
     while True:
+        #utilizo try except para evitar que el programa se caiga si el usuario hace algo raro, como apretar control + c
         try:
             tecla = input(f"Tu turno ({peon.simbolo}): Usa W, A, S, D: ").lower()
             if tecla in direcciones:
@@ -392,8 +421,11 @@ print("3. Modo ESPECTADOR (IA vs IA)")
 print("="*30)
 
 modo = input("Elige una opción (1-3): ")
+#solicitar dificultad solo si el usuario juega. El modo espectador siempre en dificil
 if modo == "1" or modo == "2":
     dificultad = input("Elige dificultad (1=Fácil, 2=Medio, 3=Imposible): ")
+    
+    #configurar profundidad de la IA segun la dificultad elegida
     if dificultad == "1":
         PROFUNDIDAD_IA = 1
     elif dificultad == "2":
@@ -405,8 +437,9 @@ if modo == "1" or modo == "2":
         sys.exit()
         
     
-#iniciar el juego
-mi_juego = Juego(12,9,0,120) 
+#============ INICIAR EL JUEGO ============
+
+mi_juego = Juego(16,9,0,120)
 
 #generar tablero segun dificultad
 if modo == "1" or modo == "2":
@@ -418,7 +451,7 @@ configurar_nivel(mi_juego, dificultad_mapa)
 
 #los peones (gato :3 y raton)
 tom = Gato(0, 0)
-jerry = Raton(11,7)
+jerry = Raton(15,7)
 mi_juego.agregar_peon(tom)
 mi_juego.agregar_peon(jerry)
 
@@ -427,6 +460,7 @@ print("--- INICIO ---")
 time.sleep(1)
 
 #bucle del juego
+#//
 while True:
     #turno del GATO
     if modo == '1':
@@ -459,7 +493,7 @@ while True:
     else:
         #IA
         #el raton es tonto por 4 turnos, luego es inteligente
-        if mi_juego.turno < 4: 
+        if mi_juego.turno < 4:
             print("🐭 El Ratón se mueve aleatoriamente (en panico)...")
             jerry.mover_aleatoriamente(mi_juego)
         else:
