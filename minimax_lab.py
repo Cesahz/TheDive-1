@@ -19,10 +19,13 @@ PROFUNDIDAD_IA = 6
 #definir las clases
 #una clase para cualquier cosa que viva en el tablero, peon me parecio adecuado
 class Peon:
+    #constructor basico, recibe coordenadas y simbolo para dibujarse
     def __init__(self, x, y, simbolo):
+        #atributos de instancia
         self.x = x
         self.y = y
         self.simbolo = simbolo
+    #funcion para cambiar la posicion del peon
     def cambiar_posicion(self,nueva_x,nueva_y):
         #actualizamos las coordenadas
         self.x = nueva_x
@@ -31,6 +34,7 @@ class Peon:
 class Gato(Peon):
     #gato malo, tiene que atrapar al raton para poder ganar
     def __init__(self, x, y):
+        #llamar al metodo constructor de la clase padre
         super().__init__(x, y, SIMBOLO_GATO)
         
 class Raton(Peon):
@@ -64,10 +68,10 @@ class Juego:
         self.queso = None
         #lista para saber que criaturas esta en el tablero
         self.peones = []
+        #generar el tablero vacio al iniciar el juego sin llamarlo desde afuera
         self.generar_tablero_vacio()
     
     def generar_tablero_vacio(self):
-        #llenar el tablero con valores limpias como '.' para que sea el tablero base
         #lo hago con bucles normales para que se entienda mejor y sea mas visual
         self.tablero = []
         for _ in range(self.alto):
@@ -94,8 +98,9 @@ class Juego:
                 self.queso = (x,y)
 
 
+    #este dibuja el estado de la consola en el presente de su ejecucion
     def renderizar(self):
-        #este dibuja el estado de la consola en el presente de su ejecucion
+        #limpiar la consola al renderizar
         comando = "cls" if os.name == "nt" else 'clear'
         os.system(comando)
 
@@ -114,9 +119,9 @@ class Juego:
             if px >= 0 and px < self.ancho:
                 if py >= 0 and py < self.alto:
                     tablero_visual[py][px] = peon.simbolo
-                
+
+        #uno los elementos de la fila en un solo texto de forma tradicional 
         for fila in tablero_visual:
-            #uno los elementos de la fila en un solo texto de forma tradicional
             texto_fila = ""
             for elemento in fila:
                 texto_fila = texto_fila + elemento
@@ -413,7 +418,7 @@ configurar_nivel(mi_juego, dificultad_mapa)
 
 #los peones (gato :3 y raton)
 tom = Gato(0, 0)
-jerry = Raton(11,8)
+jerry = Raton(11,7)
 mi_juego.agregar_peon(tom)
 mi_juego.agregar_peon(jerry)
 
